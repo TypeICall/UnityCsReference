@@ -113,22 +113,10 @@ namespace UnityEngine
             {
                 switch (index)
                 {
-                    case 0: return m00;
-                    case 1: return m10;
-                    case 2: return m20;
-                    case 3: return m30;
-                    case 4: return m01;
-                    case 5: return m11;
-                    case 6: return m21;
-                    case 7: return m31;
-                    case 8: return m02;
-                    case 9: return m12;
-                    case 10: return m22;
-                    case 11: return m32;
-                    case 12: return m03;
-                    case 13: return m13;
-                    case 14: return m23;
-                    case 15: return m33;
+                    case 0: return m00; case 1: return m10; case 2: return m20; case 3: return m30;
+                    case 4: return m01; case 5: return m11; case 6: return m21; case 7: return m31;
+                    case 8: return m02; case 9: return m12; case 10: return m22;case 11: return m32;
+                    case 12: return m03;case 13: return m13;case 14: return m23;case 15: return m33;
                     default:
                         throw new IndexOutOfRangeException("Invalid matrix index!");
                 }
@@ -138,22 +126,10 @@ namespace UnityEngine
             {
                 switch (index)
                 {
-                    case 0: m00 = value; break;
-                    case 1: m10 = value; break;
-                    case 2: m20 = value; break;
-                    case 3: m30 = value; break;
-                    case 4: m01 = value; break;
-                    case 5: m11 = value; break;
-                    case 6: m21 = value; break;
-                    case 7: m31 = value; break;
-                    case 8: m02 = value; break;
-                    case 9: m12 = value; break;
-                    case 10: m22 = value; break;
-                    case 11: m32 = value; break;
-                    case 12: m03 = value; break;
-                    case 13: m13 = value; break;
-                    case 14: m23 = value; break;
-                    case 15: m33 = value; break;
+                    case 0: m00 = value; break; case 1: m10 = value; break; case 2: m20 = value; break; case 3: m30 = value; break;
+                    case 4: m01 = value; break; case 5: m11 = value; break; case 6: m21 = value; break; case 7: m31 = value; break;
+                    case 8: m02 = value; break; case 9: m12 = value; break;case 10: m22 = value; break;case 11: m32 = value; break;
+                    case 12: m03 = value;break;case 13: m13 = value; break;case 14: m23 = value; break;case 15: m33 = value; break;
 
                     default:
                         throw new IndexOutOfRangeException("Invalid matrix index!");
@@ -370,26 +346,16 @@ namespace UnityEngine
         public static Matrix4x4 Rotate(Quaternion q)
         {
             // Precalculate coordinate products
-            float x = q.x * 2.0F;
-            float y = q.y * 2.0F;
-            float z = q.z * 2.0F;
-            float xx = q.x * x;
-            float yy = q.y * y;
-            float zz = q.z * z;
-            float xy = q.x * y;
-            float xz = q.x * z;
-            float yz = q.y * z;
-            float wx = q.w * x;
-            float wy = q.w * y;
-            float wz = q.w * z;
+            float x = q.x * 2.0F, y = q.y * 2.0F, z = q.z * 2.0F,
+            xx = q.x * x, yy = q.y * y, zz = q.z * z, xy = q.x * y, xz = q.x * z, yz = q.y * z,
+            wx = q.w * x, wy = q.w * y, wz = q.w * z;
 
             // Calculate 3x3 matrix from orthonormal basis
-            Matrix4x4 m;
-            m.m00 = 1.0f - (yy + zz); m.m10 = xy + wz; m.m20 = xz - wy; m.m30 = 0.0F;
-            m.m01 = xy - wz; m.m11 = 1.0f - (xx + zz); m.m21 = yz + wx; m.m31 = 0.0F;
-            m.m02 = xz + wy; m.m12 = yz - wx; m.m22 = 1.0f - (xx + yy); m.m32 = 0.0F;
-            m.m03 = 0.0F; m.m13 = 0.0F; m.m23 = 0.0F; m.m33 = 1.0F;
-            return m;
+            return new Matrix4x4(
+                1.0f - (yy + zz), xy + wz,          xz - wy,          0.0F,
+                xy - wz,          1.0f - (xx + zz), yz + wx,          0.0F,
+                xz + wy,          yz - wx,          1.0f - (xx + yy), 0.0F,
+                0.0F,             0.0F,             0.0F,             1.0F);
         }
 
         // Matrix4x4.zero is of questionable usefulness considering C# sets everything to 0 by default, however:

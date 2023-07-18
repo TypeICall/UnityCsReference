@@ -109,7 +109,6 @@ namespace UnityEngine
             [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
 
-
         [NativeProperty(IsThreadSafe = true)] extern public GradientMode mode { get; set; }
         [NativeProperty(IsThreadSafe = true)] extern public ColorSpace colorSpace { get; set; }
 

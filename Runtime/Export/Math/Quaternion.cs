@@ -15,14 +15,8 @@ namespace UnityEngine
     [Unity.IL2CPP.CompilerServices.Il2CppEagerStaticClassConstruction]
     public partial struct Quaternion : IEquatable<Quaternion>, IFormattable
     {
-        // X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
-        public float x;
-        // Y component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
-        public float y;
-        // Z component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
-        public float z;
-        // W component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
-        public float w;
+        // Components of the Quaternion. Don't modify this directly unless you know quaternions inside out.
+        public float x,y,z,w;
 
         // Access the x, y, z, w components using [0], [1], [2], [3] respectively.
         public float this[int index]
@@ -32,10 +26,7 @@ namespace UnityEngine
             {
                 switch (index)
                 {
-                    case 0: return x;
-                    case 1: return y;
-                    case 2: return z;
-                    case 3: return w;
+                    case 0: return x; case 1: return y; case 2: return z; case 3: return w;
                     default:
                         throw new IndexOutOfRangeException("Invalid Quaternion index!");
                 }
@@ -46,10 +37,7 @@ namespace UnityEngine
             {
                 switch (index)
                 {
-                    case 0: x = value; break;
-                    case 1: y = value; break;
-                    case 2: z = value; break;
-                    case 3: w = value; break;
+                    case 0: x = value; break; case 1: y = value; break; case 2: z = value; break; case 3: w = value; break;
                     default:
                         throw new IndexOutOfRangeException("Invalid Quaternion index!");
                 }
@@ -64,10 +52,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void Set(float newX, float newY, float newZ, float newW)
         {
-            x = newX;
-            y = newY;
-            z = newZ;
-            w = newW;
+            x = newX; y = newY; z = newZ; w = newW;
         }
 
         static readonly Quaternion identityQuaternion = new Quaternion(0F, 0F, 0F, 1F);
@@ -84,30 +69,22 @@ namespace UnityEngine
 
         // Combines rotations /lhs/ and /rhs/.
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        public static Quaternion operator*(Quaternion lhs, Quaternion rhs)
+        public static Quaternion operator*(Quaternion J, Quaternion G)
         {
             return new Quaternion(
-                lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
-                lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z,
-                lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x,
-                lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z);
+                J.w * G.x + J.x * G.w + J.y * G.z - J.z * G.y,
+                J.w * G.y + J.y * G.w + J.z * G.x - J.x * G.z,
+                J.w * G.z + J.z * G.w + J.x * G.y - J.y * G.x,
+                J.w * G.w - J.x * G.x - J.y * G.y - J.z * G.z);
         }
 
         // Rotates the point /point/ with /rotation/.
-        public static Vector3 operator*(Quaternion rotation, Vector3 point)
+        public static Vector3 operator*(Quaternion rota, Vector3 point)
         {
-            float x = rotation.x * 2F;
-            float y = rotation.y * 2F;
-            float z = rotation.z * 2F;
-            float xx = rotation.x * x;
-            float yy = rotation.y * y;
-            float zz = rotation.z * z;
-            float xy = rotation.x * y;
-            float xz = rotation.x * z;
-            float yz = rotation.y * z;
-            float wx = rotation.w * x;
-            float wy = rotation.w * y;
-            float wz = rotation.w * z;
+            float x = rota.x * 2F, y = rota.y * 2F, z = rota.z * 2F,
+                 xx = rota.x * x, yy = rota.y * y, zz = rota.z * z,
+                 xy = rota.x * y, xz = rota.x * z, yz = rota.y * z,
+                 wx = rota.w * x, wy = rota.w * y, wz = rota.w * z;
 
             Vector3 res;
             res.x = (1F - (yy + zz)) * point.x + (xy - wz) * point.y + (xz + wy) * point.z;
@@ -116,7 +93,7 @@ namespace UnityEngine
             return res;
         }
 
-        // *undocumented*
+        // *undocumented*...Would be nice to keep this as a binary value...
         public const float kEpsilon = 0.000001F;
 
         // Is the dot product of two quaternions within tolerance for them to be considered equal?

@@ -19,18 +19,8 @@ namespace UnityEngine
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public struct Color : IEquatable<Color>, IFormattable
     {
-        // Red component of the color.
-        public float r;
-
-        // Green component of the color.
-        public float g;
-
-        // Blue component of the color.
-        public float b;
-
-        // Alpha component of the color.
-        public float a;
-
+        // (Red, Green, Blue, Alpha) components of the color.
+        public float r, g, b, a;
 
         // Constructs a new Color with given r,g,b,a components.
         public Color(float r, float g, float b, float a)
@@ -243,65 +233,53 @@ namespace UnityEngine
                 }
             }
         }
-
-        // Convert a color from RGB to HSV color space.
-        public static void RGBToHSV(Color rgbColor, out float H, out float S, out float V)
+        
+        static void RGBToHSV_Shift(float shift, float hiCol, float medCol, float loCol, out float H, out float S, out float V)
         {
-            // when blue is highest valued
-            if ((rgbColor.b > rgbColor.g) && (rgbColor.b > rgbColor.r))
-                RGBToHSVHelper((float)4, rgbColor.b, rgbColor.r, rgbColor.g, out H, out S, out V);
-            //when green is highest valued
-            else if (rgbColor.g > rgbColor.r)
-                RGBToHSVHelper((float)2, rgbColor.g, rgbColor.b, rgbColor.r, out H, out S, out V);
-            //when red is highest valued
-            else
-                RGBToHSVHelper((float)0, rgbColor.r, rgbColor.g, rgbColor.b, out H, out S, out V);
-        }
-
-        static void RGBToHSVHelper(float offset, float dominantcolor, float colorone, float colortwo, out float H, out float S, out float V)
-        {
-            V = dominantcolor;
-            //we need to find out which is the minimum color
+            V = hiCol;
             if (V != 0)
             {
-                //we check which color is smallest
-                float small = 0;
-                if (colorone > colortwo) small = colortwo;
-                else small = colorone;
-
-                float diff = V - small;
-
-                //if the two values are not the same, we compute the like this
+                float diff = hiCol - loCol;
+                // if the two values are not the same, we compute the like this
                 if (diff != 0)
                 {
-                    //S = max-min/max
-                    S = diff / V;
+                    // S = max-min/max
+                    S = diff / hiCol;
                     //H = hue is offset by X, and is the difference between the two smallest colors
-                    H = offset + ((colorone - colortwo) / diff);
+                    H = shift + ((medCol - loCol) / diff);
                 }
                 else
                 {
-                    //S = 0 when the difference is zero
+                    // S = 0 when the difference is zero
                     S = 0;
-                    //H = 4 + (R-G) hue is offset by 4 when blue, and is the difference between the two smallest colors
-                    H = offset + (colorone - colortwo);
+                    // H = 4 + (R-G) hue is offset by 4 when blue, and is the difference between the two smallest colors
+                    H = shift + (medCol - loCol);
                 }
-
                 H /= 6;
-
-                //conversion values
-                if (H < 0)
-                    H += 1.0f;
+            }
+            else { S = 0; H = 0; }
+        }
+        // Convert a color from RGB to HSV color space.
+        public static void RGBToHSV(Color Col, out float H, out float S, out float V)
+        {
+            if ((Col.b > Col.g) && (Col.b > Col.r))
+            {
+                if (Col.g > Col.r) { RGBToHSV_Shift(4f, Col.b, Col.g, Col.r, H, S, V); }
+                else               { RGBToHSV_Shift(4f, Col.b, Col.r, Col.g, H, S, V); }
+            }
+            else if (Col.g > Col.r)
+            {
+                if (Col.r > Col.b) { RGBToHSV_Shift(2f, Col.g, col.r, col.b, H, S, V); }
+                else               { RGBToHSV_Shift(2f, Col.g, col.b, col.r, H, S, V); }
             }
             else
             {
-                S = 0;
-                H = 0;
+                if (Col.g > Col.b) { RGBToHSV_Shift(0f, Col.r, col.g, col.b, H, S, V); }
+                else               { RGBToHSV_Shift(0f, Col.r, col.b, col.g, H, S, V); }
             }
         }
 
-        public static Color HSVToRGB(float H, float S, float V)
-        {
+        public static Color HSVToRGB(float H, float S, float V) {
             return HSVToRGB(H, S, V, true);
         }
 
@@ -309,93 +287,53 @@ namespace UnityEngine
         public static Color HSVToRGB(float H, float S, float V, bool hdr)
         {
             Color retval = Color.white;
-            if (S == 0)
-            {
-                retval.r = V;
-                retval.g = V;
-                retval.b = V;
-            }
-            else if (V == 0)
-            {
-                retval.r = 0;
-                retval.g = 0;
-                retval.b = 0;
-            }
+            if (S == 0)      { retval = new Color(V, V, V); }
+            else if (V == 0) { retval = new Color(0, 0, 0); }
             else
             {
-                retval.r = 0;
-                retval.g = 0;
-                retval.b = 0;
+                retval = Color.black;
+                // Discretize the spectrum of hues in to (0 || 1 || 2 || 3 || 4 || 5 || 6)
+                float HueSpectrum = H * 6.0f;
+                int HueDiscrete = (int)Mathf.Floor(HueSpectrum);
+                // Find the positive difference between (HueSpectrum >= HueDiscrete).
+                float t = HueSpectrum - (float)HueDiscrete;
+                // (Value = [black to colorized to white]) * ((max = 1) - ([0 <= S <= 1] * (1 || [0 <= t <= 1] ||  [0 <= (1-t) <= 1]))
+                float col1 = V * (1 - S), col2;
+                if (HueDiscrete % 2 == 0) { col2 = V * (1 - S * (1 - t)); }
+                else                      { col2 = V * (1 - S * t); }
 
-                //crazy hsv conversion
-                float t_S, t_V, h_to_floor;
-
-                t_S = S;
-                t_V = V;
-                h_to_floor = H * 6.0f;
-
-                int temp = (int)Mathf.Floor(h_to_floor);
-                float t = h_to_floor - ((float)temp);
-                float var_1 = (t_V) * (1 - t_S);
-                float var_2 = t_V * (1 - t_S *  t);
-                float var_3 = t_V * (1 - t_S * (1 - t));
-
-                switch (temp)
+                switch (HueDiscrete)
                 {
                     case 0:
-                        retval.r = t_V;
-                        retval.g = var_3;
-                        retval.b = var_1;
+                        retval = new Color(V, col2, col1);
                         break;
-
                     case 1:
-                        retval.r = var_2;
-                        retval.g = t_V;
-                        retval.b = var_1;
+                        retval = new Color(col2, V, col1);
                         break;
-
                     case 2:
-                        retval.r = var_1;
-                        retval.g = t_V;
-                        retval.b = var_3;
+                        retval = new Color(col1, V, col2);
                         break;
-
                     case 3:
-                        retval.r = var_1;
-                        retval.g = var_2;
-                        retval.b = t_V;
+                        retval = new Color(col1, col2, V);
                         break;
-
                     case 4:
-                        retval.r = var_3;
-                        retval.g = var_1;
-                        retval.b = t_V;
+                        retval = new Color(col2, col1, V);
                         break;
-
                     case 5:
-                        retval.r = t_V;
-                        retval.g = var_1;
-                        retval.b = var_2;
+                        retval = new Color(V, col1, col2);
                         break;
-
                     case 6:
-                        retval.r = t_V;
-                        retval.g = var_3;
-                        retval.b = var_1;
+                        retval = new Color(V, col2, col1);
                         break;
-
                     case -1:
-                        retval.r = t_V;
-                        retval.g = var_1;
-                        retval.b = var_2;
+                        retval = new Color(V, col1, col2);
                         break;
                 }
-
                 if (!hdr)
                 {
-                    retval.r = Mathf.Clamp(retval.r, 0.0f, 1.0f);
-                    retval.g = Mathf.Clamp(retval.g, 0.0f, 1.0f);
-                    retval.b = Mathf.Clamp(retval.b, 0.0f, 1.0f);
+                    retval = new Color(Mathf.Clamp(retval.r, 0.0f, 1.0f),
+                                    Mathf.Clamp(retval.g, 0.0f, 1.0f),
+                                    Mathf.Clamp(retval.b, 0.0f, 1.0f));
                 }
             }
             return retval;
